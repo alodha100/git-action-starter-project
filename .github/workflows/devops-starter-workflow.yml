@@ -8,8 +8,8 @@ on:
 env:
   AZURE_WEBAPP_NAME: "gitactionstarterproject"    # set this to your application's name
   AZURE_WEBAPP_PACKAGE_PATH: "."      # set this to the path to your web app project, defaults to the repository root
-  NUGET_VERSION: '5.8.0'
-  DOTNETSDK_VERSION: '3.1.302'
+  NUGET_VERSION: '6.8.0'
+  DOTNETSDK_VERSION: '6.0.x'
   RESOURCEGROUPNAME: "gitactionstarterproject-rg"
   LOCATION: "East US"
   HOSTINGPLANNAME: "gitactionstarterproject-plan"
@@ -22,7 +22,7 @@ jobs:
     steps:
 
     # checkout the repo
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v4
 
     - name: Creating artifact directories
       run: |
@@ -30,7 +30,7 @@ jobs:
         mkdir deploymenttemplates
     
     - name: Install Nuget
-      uses: nuget/setup-nuget@v1
+      uses: nuget/setup-nuget@v2
       with:
         nuget-version: ${{ env.NUGET_VERSION }}
     - name: NuGet to restore dependencies as well as project-specific tools that are specified in the project file
@@ -39,9 +39,7 @@ jobs:
         nuget restore
   
     - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.0
-      env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+      uses: microsoft/setup-msbuild@v2
     
     - name: Run MSBuild
       run: |
@@ -49,9 +47,9 @@ jobs:
         msbuild .\SampleWebApplication.sln -p:Configuration=Release
 
     - name: Setup .NET sdk
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: ${{ env. DOTNETSDK_VERSION }}
+        dotnet-version: ${{ env.DOTNETSDK_VERSION }}
     
     - name: Run unit tests
       run: | 
@@ -64,7 +62,7 @@ jobs:
 
     - name: Upload Application to Build Artifact
       continue-on-error: false
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: buildartifacts
         path: buildartifacts
@@ -75,7 +73,7 @@ jobs:
 
     - name: Upload Arm templates to Artifact
       continue-on-error: false
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: deploymenttemplates
         path: deploymenttemplates
@@ -87,7 +85,7 @@ jobs:
     steps:
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       continue-on-error: false
       with:
         name: buildartifacts
@@ -98,7 +96,7 @@ jobs:
         unzip -qq ./buildartifacts/Application.zip -d ./
 
     - name: Download an Arm template
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       continue-on-error: false
       with:
         name: deploymenttemplates
@@ -109,14 +107,14 @@ jobs:
         unzip -qq ./deploymenttemplates/ArmTemplates.zip -d ./
 
     - name: Login to Azure
-      uses: azure/login@v1
+      uses: azure/login@v2
       continue-on-error: false
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
     # Deploy Arm template
     - name: Deploy ARM Template
-      uses: azure/CLI@v1
+      uses: azure/CLI@v2
       continue-on-error: false
       with:
         inlineScript: |
@@ -124,7 +122,7 @@ jobs:
           az deployment group create --resource-group "${{ env.RESOURCEGROUPNAME }}" --template-file ./ArmTemplates/windows-webapp-template.json --parameters webAppName="${{ env.AZURE_WEBAPP_NAME }}" hostingPlanName="${{ env.HOSTINGPLANNAME }}" appInsightsLocation="${{ env.APPINSIGHTLOCATION }}" sku="${{ env.SKU }}"
 
     - name: 'Deploy web app'
-      uses: azure/webapps-deploy@v2
+      uses: azure/webapps-deploy@v3
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
         package: '${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/SampleWebApplication'
@@ -135,10 +133,10 @@ jobs:
     needs: deploy
     steps:
 
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v4
 
     - name: Install Nuget
-      uses: nuget/setup-nuget@v1
+      uses: nuget/setup-nuget@v2
       with:
         nuget-version: ${{ env.NUGET_VERSION }}
 
@@ -148,9 +146,7 @@ jobs:
         nuget restore
   
     - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.0
-      env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+      uses: microsoft/setup-msbuild@v2
     
     - name: Run MSBuild
       run: |
@@ -158,9 +154,9 @@ jobs:
         msbuild .\SampleWebApplication.sln -p:Configuration=Release
 
     - name: Setup .NET sdk
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: ${{ env. DOTNETSDK_VERSION }} 
+        dotnet-version: ${{ env.DOTNETSDK_VERSION }}
 
     - name: Update web app url in Run Settings
       shell: powershell
